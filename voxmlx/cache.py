@@ -5,10 +5,12 @@ class RotatingKVCache:
     step = 256
 
     def __init__(self, max_size):
+        if int(max_size) <= 0:
+            raise ValueError(f"max_size must be > 0, got {max_size!r}")
         self.keys = None
         self.values = None
         self._offset = 0
-        self.max_size = max_size
+        self.max_size = int(max_size)
         self._idx = 0
 
     @property
@@ -38,18 +40,29 @@ class RotatingKVCache:
 
     def _update_concat(self, keys, values):
         if self.keys is None:
-            self.keys = keys
-            self.values = values
+            add = keys.shape[2]
+            if add > self.max_size:
+                trim_size = add - self.max_size
+                self.keys = keys[..., trim_size:, :]
+                self.values = values[..., trim_size:, :]
+            else:
+                self.keys = keys
+                self.values = values
         else:
             self.keys = self._temporal_order(self.keys)
             self.values = self._temporal_order(self.values)
             self._idx = self.keys.shape[2]
 
-            trim_size = self._idx - self.max_size + 1
+            cur = self.keys.shape[2]
+            add = keys.shape[2]
+            trim_size = max(0, cur + add - self.max_size)
             self.keys = self._trim(trim_size, self.keys, keys)
             self.values = self._trim(trim_size, self.values, values)
         self._offset += keys.shape[2]
         self._idx = self.keys.shape[2]
+        if __debug__:
+            assert self.keys.shape[2] <= self.max_size
+            assert self.values.shape[2] <= self.max_size
         return self.keys, self.values
 
     def _update_in_place(self, keys, values):
