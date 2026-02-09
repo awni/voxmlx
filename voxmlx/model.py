@@ -118,8 +118,9 @@ class VoxtralRealtime(nn.Module):
 
         # Create encoder cache on first call
         if encoder_cache is None:
+            window = int(self.encoder.sliding_window)
             encoder_cache = [
-                RotatingKVCache(100_000)
+                RotatingKVCache(window)
                 for _ in range(len(self.encoder.layers))
             ]
 
