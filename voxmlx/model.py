@@ -77,7 +77,7 @@ class VoxtralRealtime(nn.Module):
         # Truncate T to be even (for conv stride 2)
         T = mel.shape[1]
         if T % 2 != 0:
-            mel = mel[:, 1:]
+            mel = mel[:, :-1]
 
         x = self.encoder(mel)  # [1, T/2, encoder_dim]
         x = x[0]  # [T/2, encoder_dim]
@@ -86,7 +86,7 @@ class VoxtralRealtime(nn.Module):
         L = x.shape[0]
         remainder = L % self.downsample_factor
         if remainder != 0:
-            x = x[remainder:]
+            x = x[:-remainder]
             L = x.shape[0]
 
         # Reshape: [T/2, 1280] -> [T/8, 5120]
