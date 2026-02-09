@@ -1,0 +1,38 @@
+{
+  "commit": "e6d193e85e84e30f26e370c66973ce287b8a9d57",
+  "clip_seconds": 20,
+  "encoder_sliding_window": 750,
+  "downsample_factor": 4,
+  "decoder_sliding_window": 8192,
+  "encode_shapes": {
+    "non_incremental": [
+      298,
+      3072
+    ],
+    "incremental": [
+      298,
+      3072
+    ]
+  },
+  "timing_seconds": {
+    "encode_non_incremental": 0.27456287504173815,
+    "encode_incremental": 2.430891291005537,
+    "decode_non_incremental": 2.217908125021495,
+    "decode_incremental": 2.190300542046316
+  },
+  "divergence": {
+    "first_token_divergence_index": 50,
+    "token_levenshtein": 17,
+    "token_norm_vs_incremental": 0.06563706563706563,
+    "non_incremental_len": 259,
+    "incremental_len": 259
+  },
+  "embed_diff": {
+    "global_max_abs": 1.125,
+    "global_mean_abs": 0.013421893119812012,
+    "first_pos_max_abs_gt_1e-2": 2,
+    "first_pos_max_abs_gt_1e-1": 18,
+    "first_pos_max_abs_gt_1": 48,
+    "max_abs_at_88": 0.126953125
+  }
+}
