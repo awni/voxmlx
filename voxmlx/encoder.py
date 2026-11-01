@@ -2,6 +2,17 @@ import mlx.core as mx
 import mlx.nn as nn
 
 
+def create_causal_mask(N: int, offset: int = 0, window_size: int | None = None):
+    rinds = mx.arange(offset + N)
+    linds = mx.arange(offset, offset + N) if offset else rinds
+    linds = linds[:, None]
+    rinds = rinds[None]
+    mask = linds >= rinds
+    if window_size is not None:
+        mask = mask & (linds < rinds + window_size)
+    return mask
+
+
 class CausalConv1d(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, kernel_size: int, stride: int = 1):
         super().__init__()
@@ -141,9 +152,19 @@ class CausalWhisperEncoder(nn.Module):
 
         return x, new_conv1_tail, new_conv2_tail
 
+    def _make_mask(self, N: int, cache=None):
+        offset = (
+            min(cache[0].max_size - 1, cache[0].offset)
+            if cache is not None
+            else 0
+        )
+        if offset + N > self.sliding_window:
+            return create_causal_mask(N, offset, window_size=self.sliding_window)
+        return "causal" if N > 1 else None
+
     def forward_transformer(self, x, cache=None):
         """Run transformer layers with optional KV cache."""
-        mask = "causal"
+        mask = self._make_mask(x.shape[1], cache)
         for i, layer in enumerate(self.layers):
             layer_cache = cache[i] if cache is not None else None
             x = layer(x, offset=0, mask=mask, cache=layer_cache)
@@ -152,8 +173,4 @@ class CausalWhisperEncoder(nn.Module):
 
     def __call__(self, mel: mx.array) -> mx.array:
         x = self.forward_conv(mel.astype(self.conv1.weight.dtype))  # [1, T/2, dim]
-        mask = "causal"
-        for layer in self.layers:
-            x = layer(x, offset=0, mask=mask)
-        x = self.norm(x)
-        return x  # [1, T/2, dim]
+        return self.forward_transformer(x)  # [1, T/2, dim]
